@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgroMétéo — {{ nom_complet }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🌾</span>
+      <div><h1>AgroMétéo</h1><p class="subtitle">Station de surveillance IoT</p></div>
+    </div>
+    <div class="header-right">
+      <div class="alerte-compteurs" id="alerteCompteurs" style="display:none;">
+        <span class="compteur-critique" id="cptCritique">0 critique</span>
+        <span class="compteur-warning"  id="cptWarning">0 warning</span>
+      </div>
+      <div class="status-badge" id="statusBadge"><span class="dot"></span><span id="statusText">Connexion...</span></div>
+      <span style="color:rgba(255,255,255,0.7);font-size:0.82rem;margin-left:8px;">{{ avatar }} {{ nom_complet }}</span>
+      <a href="/logout" style="font-family:var(--font-body);font-size:0.8rem;font-weight:600;padding:6px 14px;background:rgba(230,57,70,0.2);color:#ff8888;border:1px solid rgba(230,57,70,0.4);border-radius:8px;text-decoration:none;margin-left:8px;">Déconnexion</a>
+    </div>
+  </div>
+</header>
+
+<div id="banniereAlerte" class="banniere-alerte" style="display:none;">
+  <span>🚨</span><span id="banniereTexte"></span>
+  <button onclick="document.getElementById('banniereAlerte').style.display='none'">✕</button>
+</div>
+
+<main class="container">
+
+  <!-- Contrôles -->
+  <section class="controls-bar">
+    <div class="control-group">
+      <label for="selectParcelle">Ma parcelle</label>
+      <select id="selectParcelle"></select>
+    </div>
+    <div class="control-group">
+      <label for="selectType">Type de capteur</label>
+      <select id="selectType">
+        <option value="">Tous les types</option>
+        <option value="temperature">Température</option>
+        <option value="humidite">Humidité</option>
+        <option value="ph_sol">pH du sol</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label for="selectLimite">Afficher</label>
+      <select id="selectLimite">
+        <option value="50">50 mesures</option>
+        <option value="100" selected>100 mesures</option>
+        <option value="200">200 mesures</option>
+      </select>
+    </div>
+    <button class="btn-refresh" onclick="ajouterParcelle()">+ Nouvelle parcelle</button>
+  </section>
+
+  <!-- Quota info -->
+  <div id="quotaInfo" class="quota-bar">
+    <span id="quotaTexte">Chargement du quota...</span>
+  </div>
+
+  <!-- Stats -->
+  <section class="stats-grid" id="statsGrid"><div class="stat-card loading">Chargement...</div></section>
+
+  <!-- Recommandations -->
+  <!-- ── Actions utilisateur ── -->
+  <section style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn-refresh" style="background:#2d6a4f;" onclick="ouvrirModalParcelle()">🌿 Ajouter une parcelle</button>
+    <button class="btn-refresh" style="background:#c8991a;" onclick="ouvrirModalAlerte()">📝 Signaler une alerte</button>
+  </section>
+
+  <!-- Modal parcelle -->
+  <div id="modalParcelle" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:28px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <h3 style="margin-bottom:16px;color:#1a3a2a;">🌿 Ajouter une parcelle</h3>
+      <label style="font-size:.75rem;font-weight:600;text-transform:uppercase;color:#666;">Nom de la parcelle</label>
+      <input type="text" id="inputNomParcelle" placeholder="Ex: Parcelle Nord, Champ 4..."
+        style="width:100%;margin:8px 0 12px;padding:10px;border:1.5px solid #dde8e0;border-radius:8px;font-family:Sora,sans-serif;font-size:.9rem;"/>
+      <div id="msgParcelle" style="font-size:.82rem;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="ajouterParcelle()" style="flex:1;padding:10px;background:#2d6a4f;color:#fff;border:none;border-radius:8px;font-family:Sora,sans-serif;font-weight:700;cursor:pointer;">Ajouter</button>
+        <button onclick="document.getElementById('modalParcelle').style.display='none'" style="flex:1;padding:10px;background:#f0f0f0;border:none;border-radius:8px;cursor:pointer;">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal alerte manuelle -->
+  <div id="modalAlerte" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:28px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <h3 style="margin-bottom:16px;color:#1a3a2a;">📝 Signaler une alerte</h3>
+      <label style="font-size:.75rem;font-weight:600;text-transform:uppercase;color:#666;">Parcelle concernée</label>
+      <select id="selectParcelleAlerte" style="width:100%;margin:8px 0 12px;padding:10px;border:1.5px solid #dde8e0;border-radius:8px;font-family:Sora,sans-serif;"></select>
+      <label style="font-size:.75rem;font-weight:600;text-transform:uppercase;color:#666;">Description du problème</label>
+      <textarea id="inputMessageAlerte" rows="3" placeholder="Décrivez ce que vous observez..."
+        style="width:100%;margin:8px 0 12px;padding:10px;border:1.5px solid #dde8e0;border-radius:8px;font-family:Sora,sans-serif;resize:vertical;"></textarea>
+      <div id="msgAlerte" style="font-size:.82rem;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="envoyerAlerte()" style="flex:1;padding:10px;background:#c8991a;color:#fff;border:none;border-radius:8px;font-family:Sora,sans-serif;font-weight:700;cursor:pointer;">Envoyer</button>
+        <button onclick="document.getElementById('modalAlerte').style.display='none'" style="flex:1;padding:10px;background:#f0f0f0;border:none;border-radius:8px;cursor:pointer;">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="reco-section">
+    <h2 class="section-title">🤖 Recommandations agronomiques</h2>
+    <div class="reco-grid" id="recoGrid"><div class="reco-card loading">Chargement...</div></div>
+  </section>
+
+  <!-- Onglets -->
+  <section class="tabs-section">
+    <div class="tabs">
+      <button class="tab active" data-tab="mesures">📊 Mesures</button>
+      <button class="tab" data-tab="alertes">🚨 Alertes <span id="badgeAlertes" class="badge" style="display:none;"></span></button>
+      <button class="tab" data-tab="anomalies">⚠️ Anomalies</button>
+      <button class="tab" data-tab="graphique">📈 Graphique</button>
+      <button class="tab" data-tab="agregation">🔬 Agrégation</button>
+      <button class="tab" data-tab="nouvelle-alerte">✏️ Signaler</button>
+    </div>
+
+    <div id="tab-mesures" class="tab-content active">
+      <div class="table-wrapper">
+        <table><thead><tr><th>Horodatage</th><th>Capteur</th><th>Parcelle</th><th>Type</th><th>Valeur</th><th>Unité</th><th>État</th></tr></thead>
+        <tbody id="tbodyMesures"><tr><td colspan="7" class="empty">Chargement...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div id="tab-alertes" class="tab-content">
+      <div class="filtres-alertes">
+        <button class="btn-filtre active" id="fAll"      onclick="filtrerAlertes('')">Toutes</button>
+        <button class="btn-filtre"        id="fCritique" onclick="filtrerAlertes('critique')">🔴 Critiques</button>
+        <button class="btn-filtre"        id="fWarning"  onclick="filtrerAlertes('warning')">🟡 Avertissements</button>
+      </div>
+      <div id="alertesListe" class="alertes-liste"><div class="empty">Chargement...</div></div>
+    </div>
+
+    <div id="tab-anomalies" class="tab-content">
+      <div class="anomalie-info"><span>⚠️</span> Humidité inférieure à <strong>30%</strong></div>
+      <div class="table-wrapper">
+        <table><thead><tr><th>Horodatage</th><th>Capteur</th><th>Parcelle</th><th>Humidité</th><th>Niveau</th></tr></thead>
+        <tbody id="tbodyAnomalies"><tr><td colspan="5" class="empty">Chargement...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div id="tab-graphique" class="tab-content">
+      <div class="graph-controls">
+        <div class="control-group"><label>Capteur</label><select id="selectCapteurGraph"></select></div>
+        <div class="control-group"><label>Fenêtre</label>
+          <select id="selectHeures">
+            <option value="6">6 heures</option><option value="12">12 heures</option>
+            <option value="24" selected>24 heures</option><option value="48">48 heures</option>
+          </select>
+        </div>
+        <button class="btn-secondary" onclick="chargerGraphique()">Afficher</button>
+      </div>
+      <div class="chart-container">
+        <canvas id="chartEvolution"></canvas>
+        <p id="chartEmpty" class="empty" style="display:none;">Pas encore assez de données.</p>
+      </div>
+    </div>
+
+    <div id="tab-agregation" class="tab-content">
+      <p class="section-desc">Agrégation MongoDB — Moyenne, min et max de température par parcelle sur <strong>24h</strong>.</p>
+      <div id="agregCards" class="agreg-grid"><div class="agreg-card loading">Chargement...</div></div>
+    </div>
+
+    <!-- Onglet Signaler une alerte -->
+    <div id="tab-nouvelle-alerte" class="tab-content">
+      <div class="form-alerte">
+        <h3>✏️ Signaler un problème manuellement</h3>
+        <p>Signalez un problème que vous observez sur le terrain.</p>
+        <div class="champ-alerte">
+          <label>Parcelle concernée</label>
+          <select id="alerteParcelle"></select>
+        </div>
+        <div class="champ-alerte">
+          <label>Niveau d'urgence</label>
+          <select id="alerteNiveau">
+            <option value="warning">🟡 Avertissement</option>
+            <option value="critique">🔴 Critique</option>
+          </select>
+        </div>
+        <div class="champ-alerte">
+          <label>Titre du problème</label>
+          <input type="text" id="alerteTitre" placeholder="Ex : Fuite d'eau sur le système d'irrigation"/>
+        </div>
+        <div class="champ-alerte">
+          <label>Description</label>
+          <textarea id="alerteMessage" rows="3" placeholder="Décrivez le problème observé..."></textarea>
+        </div>
+        <div class="champ-alerte">
+          <label>Recommandation (optionnel)</label>
+          <input type="text" id="alerteReco" placeholder="Ex : Vérifier le robinet principal"/>
+        </div>
+        <button class="btn-refresh" onclick="envoyerAlerte()">Envoyer l'alerte</button>
+        <div id="msgAlerte" style="margin-top:12px;font-size:0.88rem;"></div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<footer class="footer">AgroTIC — TP Internet des Objets — MongoDB + Python Flask</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

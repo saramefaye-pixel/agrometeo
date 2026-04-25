@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgroMétéo — Connexion</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/login.css"/>
+</head>
+<body>
+<div class="login-bg">
+  <div class="login-card">
+    <div class="login-header">
+      <span class="login-icon">🌾</span>
+      <h1>AgroMétéo</h1>
+      <p>Station de surveillance IoT agricole</p>
+    </div>
+
+    <!-- Onglets -->
+    <div class="tabs-auth">
+      <button class="tab-auth {% if succes_inscription %}{% elif erreur_inscription %}active{% else %}active{% endif %}" id="tabLogin" onclick="showTab('login')">Se connecter</button>
+      <button class="tab-auth {% if erreur_inscription %}active{% endif %}" id="tabInscription" onclick="showTab('inscription')">Créer un compte</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="panelLogin" class="panel-auth {% if erreur_inscription and not erreur_login %}hidden{% endif %}">
+      {% if erreur_login %}<div class="auth-erreur">⚠️ {{ erreur_login }}</div>{% endif %}
+      {% if succes_inscription %}<div class="auth-succes">✅ Compte créé ! Vous pouvez vous connecter.</div>{% endif %}
+      <form method="POST" action="/login">
+        <input type="hidden" name="action" value="login"/>
+        <div class="champ">
+          <label>Nom d'utilisateur</label>
+          <input type="text" name="username" placeholder="votre_username" required autocomplete="username"/>
+        </div>
+        <div class="champ">
+          <label>Mot de passe</label>
+          <div class="input-pwd">
+            <input type="password" id="pwd1" name="mot_de_passe" placeholder="••••••••" required autocomplete="current-password"/>
+            <button type="button" onclick="toggle('pwd1')">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="btn-login">Se connecter →</button>
+      </form>
+    </div>
+
+    <!-- INSCRIPTION -->
+    <div id="panelInscription" class="panel-auth {% if not erreur_inscription %}hidden{% endif %}">
+      {% if erreur_inscription %}<div class="auth-erreur">⚠️ {{ erreur_inscription }}</div>{% endif %}
+      <form method="POST" action="/login">
+        <input type="hidden" name="action" value="inscription"/>
+        <div class="champ">
+          <label>Nom complet</label>
+          <input type="text" name="nom_complet" placeholder="Ex : Sokhna Arame FAYE" required/>
+        </div>
+        <div class="champ">
+          <label>Nom d'utilisateur</label>
+          <input type="text" name="new_username" placeholder="Ex : sokhna (sans espaces)" required pattern="[a-zA-Z0-9_]+" title="Lettres, chiffres et _ uniquement"/>
+        </div>
+        <div class="champ">
+          <label>Adresse email</label>
+          <input type="email" name="email" placeholder="exemple@email.com" required/>
+        </div>
+        <div class="champ">
+          <label>Mot de passe (min. 6 caractères)</label>
+          <div class="input-pwd">
+            <input type="password" id="pwd2" name="new_password" placeholder="••••••••" required minlength="6" autocomplete="new-password"/>
+            <button type="button" onclick="toggle('pwd2')">👁</button>
+          </div>
+        </div>
+        <div class="champ">
+          <label>Confirmer le mot de passe</label>
+          <div class="input-pwd">
+            <input type="password" id="pwd3" name="confirm_password" placeholder="••••••••" required autocomplete="new-password"/>
+            <button type="button" onclick="toggle('pwd3')">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="btn-login">Créer mon compte →</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+<script>
+function showTab(t) {
+  document.getElementById('panelLogin').classList.toggle('hidden', t!=='login');
+  document.getElementById('panelInscription').classList.toggle('hidden', t!=='inscription');
+  document.getElementById('tabLogin').classList.toggle('active', t==='login');
+  document.getElementById('tabInscription').classList.toggle('active', t==='inscription');
+}
+function toggle(id) {
+  const i = document.getElementById(id);
+  i.type = i.type==='password' ? 'text' : 'password';
+}
+{% if erreur_inscription %}showTab('inscription');{% endif %}
+</script>
+</body>
+</html>

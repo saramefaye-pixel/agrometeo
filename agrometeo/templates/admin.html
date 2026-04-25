@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Administration — AgroMétéo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link rel="stylesheet" href="/static/admin.css"/>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🌾</span>
+      <div><h1>AgroMétéo <span class="badge-admin">ADMIN</span></h1><p class="subtitle">Panneau d'administration</p></div>
+    </div>
+    <div class="header-right">
+      <span class="user-info">{{ avatar }} {{ nom_complet }}</span>
+      <span id="clockAdmin" style="font-family:'Space Mono',monospace;font-size:.78rem;color:rgba(255,255,255,.6);"></span>
+      <a href="/logout" class="btn-logout">Déconnexion</a>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <section class="admin-section">
+    <h2 class="section-title">📊 Statistiques globales</h2>
+    <div class="admin-stats" id="adminStats"><div class="admin-stat-card loading">Chargement...</div></div>
+  </section>
+
+  <section class="admin-section">
+    <h2 class="section-title">👥 Utilisateurs inscrits</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Utilisateur</th><th>Nom complet</th><th>Email</th><th>Inscription</th><th>Parcelles</th><th>Quota</th><th>Mesures</th><th>État</th><th>Action</th></tr></thead>
+        <tbody id="tbodyUsers"><tr><td colspan="9" class="empty">Chargement...</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="admin-section">
+    <h2 class="section-title">🟢 Utilisateurs connectés en ce moment</h2>
+    <div id="sessionsListe"><div class="empty">Chargement...</div></div>
+    <p class="admin-note">Rafraîchissement automatique toutes les 10 secondes</p>
+  </section>
+
+  <section class="admin-section">
+    <h2 class="section-title">🗄️ Collections MongoDB</h2>
+    <div class="collections-grid" id="collectionsGrid"><div class="loading">Chargement...</div></div>
+  </section>
+
+  <section class="admin-section">
+    <h2 class="section-title">🚨 30 dernières alertes (toutes parcelles)</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Heure</th><th>Niveau</th><th>Utilisateur</th><th>Parcelle</th><th>Titre</th><th>Recommandation</th></tr></thead>
+        <tbody id="tbodyAlertesAdmin"><tr><td colspan="6" class="empty">Chargement...</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="admin-section">
+    <h2 class="section-title">⚙️ Quota global par défaut</h2>
+    <div class="action-card" style="max-width:400px;">
+      <div class="action-icon">📦</div>
+      <h3>Quota max de parcelles par utilisateur</h3>
+      <p>Valeur actuelle : <strong>{{ quota_defaut }}</strong> parcelles</p>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <input type="number" id="inputQuota" min="1" max="20" value="{{ quota_defaut }}"
+               style="padding:8px 12px;border:1.5px solid #dde8e0;border-radius:8px;font-family:'Sora',sans-serif;width:80px;"/>
+        <button class="btn-action" onclick="setQuota()">Appliquer</button>
+      </div>
+      <div id="msgQuota" class="action-msg"></div>
+    </div>
+  </section>
+
+  <section class="admin-section">
+    <h2 class="section-title">🔧 Actions</h2>
+    <div class="actions-grid">
+      <div class="action-card">
+        <div class="action-icon">🧹</div>
+        <h3>Nettoyer les mesures</h3>
+        <p>Supprime les mesures de plus de 7 jours.</p>
+        <button class="btn-action danger" onclick="viderMesures()">Supprimer &gt; 7 jours</button>
+        <div id="msgVider" class="action-msg"></div>
+      </div>
+      <div class="action-card">
+        <div class="action-icon">🌐</div>
+        <h3>Voir le dashboard</h3>
+        <p>Accéder à l'interface station météo.</p>
+        <a href="/dashboard" class="btn-action">Ouvrir</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+<footer class="footer">AgroMétéo — Administration — MongoDB Atlas + Python Flask</footer>
+<script src="/static/admin.js"></script>
+</body>
+</html>
