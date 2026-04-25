@@ -272,8 +272,6 @@ def parcelles():
 
 def _filtre_user(filtre=None):
     f = filtre or {}
-    if session.get("role") != "admin":
-        f["username"] = session["username"]
     return f
 
 @bp.route("/api/mesures")

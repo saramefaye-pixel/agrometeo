@@ -51,6 +51,7 @@ def _inserer_mesures():
                     "valeur":     valeur,
                     "unite":      PLAGES[type_cap]["unite"],
                     "timestamp":  datetime.now(timezone.utc),
+		    "username": "system",
                 })
 
         if mesures:
