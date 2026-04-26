@@ -411,3 +411,9 @@ def recommandations():
         return jsonify([_s(d) for d in docs])
     except Exception as e:
         return jsonify({"erreur":str(e)}), 500
+@bp.route("/api/simuler_cycle")
+def simuler_cycle():
+    """Déclenché par un appel externe toutes les minutes."""
+    from app.simulator import _inserer_mesures
+    _inserer_mesures()
+    return jsonify({"ok": True, "heure": datetime.now().strftime("%H:%M:%S")})
