@@ -31,36 +31,32 @@ def _prochaine_valeur(key, t):
 def _inserer_mesures():
     try:
         db = get_db()
-        # Récupérer toutes les parcelles actives
-        parcelles = list(db.parcelles.find({"active": True}))
-        if not parcelles:
+        capteurs = list(db.capteurs.find({}, {"_id": 0}))
+        if not capteurs:
+            print("[Simulateur] Aucun capteur trouvé.")
             return
-
         mesures = []
-        for parc in parcelles:
-            username     = parc.get("username", "")
-            nom_parcelle = parc.get("nom", "")
-            for type_cap in TYPES_CAPTEURS:
-                cap_id = f"{username}_{nom_parcelle}_{type_cap}".replace(" ", "_")
-                valeur = _prochaine_valeur(cap_id, type_cap)
-                mesures.append({
-                    "capteur_id": capteur["capteur_id"],
-                    "parcelle":   capteur["parcelle"],
-                    "type":       capteur["type"],
-                    "valeur":     valeur,
-                    "unite":      PLAGES[type_cap]["unite"],
-                    "timestamp":  datetime.now(timezone.utc),
-		    "username":   capteur.get("username", "system"),
-                })
-
+        for capteur in capteurs:
+            type_cap = capteur.get("type")
+            if type_cap not in PLAGES:
+                continue
+            cap_id = capteur.get("capteur_id", "")
+            valeur = _prochaine_valeur(cap_id, type_cap)
+            mesures.append({
+                "capteur_id": capteur["capteur_id"],
+                "parcelle":   capteur["parcelle"],
+                "type":       type_cap,
+                "valeur":     valeur,
+                "unite":      PLAGES[type_cap]["unite"],
+                "timestamp":  datetime.now(timezone.utc),
+                "username":   capteur.get("username", "system"),
+            })
         if mesures:
             db.mesures.insert_many(mesures)
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ {len(mesures)} mesures insérées ({len(parcelles)} parcelles).")
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ {len(mesures)} mesures insérées.")
             analyser_et_sauvegarder(mesures)
-
     except Exception as e:
         print(f"[Simulateur] ⚠️ Erreur : {e}")
-
 def _boucle(intervalle):
     print(f"🚀  Simulateur démarré (intervalle : {intervalle}s).")
     _inserer_mesures()
