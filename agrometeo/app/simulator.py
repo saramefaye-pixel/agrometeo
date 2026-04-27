@@ -44,14 +44,13 @@ def _inserer_mesures():
                 cap_id = f"{username}_{nom_parcelle}_{type_cap}".replace(" ", "_")
                 valeur = _prochaine_valeur(cap_id, type_cap)
                 mesures.append({
-                    "capteur_id": cap_id,
-                    "parcelle":   nom_parcelle,
-                    "username":   username,
-                    "type":       type_cap,
+                    "capteur_id": capteur["capteur_id"],
+                    "parcelle":   capteur["parcelle"],
+                    "type":       capteur["type"],
                     "valeur":     valeur,
                     "unite":      PLAGES[type_cap]["unite"],
                     "timestamp":  datetime.now(timezone.utc),
-		    "username": "system",
+		    "username":   capteur.get("username", "system"),
                 })
 
         if mesures:
