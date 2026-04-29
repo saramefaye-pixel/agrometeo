@@ -272,6 +272,8 @@ def parcelles():
 
 def _filtre_user(filtre=None):
     f = filtre or {}
+    if session.get("role") != "admin":
+        f["username"] = session["username"]
     return f
 
 @bp.route("/api/mesures")
@@ -365,7 +367,7 @@ def alertes():
         niveau   = request.args.get("niveau")
         limite   = int(request.args.get("limite",50))
         db = get_db()
-        filtre = {} if session.get("role")=="admin" else {"username":session["username"]}
+        filtre = _filtre_user()
         if parcelle: filtre["parcelle"] = parcelle
         if niveau:   filtre["niveau"] = niveau
         docs = db.alertes.find(filtre).sort("timestamp",-1).limit(limite)
